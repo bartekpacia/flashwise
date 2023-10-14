@@ -17,15 +17,15 @@ VALUES
 
 CREATE TABLE flashcard_sets (
     id SERIAL PRIMARY KEY,
-    author BIGINT UNSIGNED NOT NULL,
+    author_id BIGINT UNSIGNED NOT NULL,
     status ENUM('public', 'private') DEFAULT 'private',
     description VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     modified_at TIMESTAMP DEFAULT NULL,
-    FOREIGN KEY (author) REFERENCES users(id)
+    FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
-INSERT INTO flashcard_sets (author, description)
+INSERT INTO flashcard_sets (author_id, description)
 VALUES
     (2, 'Ciekawostki o Polsce');
 
@@ -36,13 +36,13 @@ CREATE TABLE flashcards (
     back VARCHAR(512) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     modified_at TIMESTAMP DEFAULT NULL,
-    author BIGINT UNSIGNED NOT NULL,
-    flashcard_set BIGINT UNSIGNED NOT NULL,
-    FOREIGN KEY (author) REFERENCES users(id),
-    FOREIGN KEY (flashcard_set) REFERENCES flashcard_sets(id)
+    author_id BIGINT UNSIGNED NOT NULL,
+    set_id BIGINT UNSIGNED NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES users(id),
+    FOREIGN KEY (set_id) REFERENCES flashcard_sets(id)
 );
 
-INSERT INTO flashcards (front, back, author, flashcard_set)
+INSERT INTO flashcards (front, back, author_id, set_id)
 VALUES
     ('Stolica Polski', 'Warszawa', 2, 1),
     ('Najpiękniejsze miasto Polski', 'Gliwice', 2, 1),
@@ -51,4 +51,4 @@ VALUES
 
 -- SELECT flashcards.front, flashcards.back, users.username
 --     -> FROM flashcards
---     -> JOIN users ON flashcards.author = users.id;
+--     -> JOIN users ON flashcards.author_id = users.id;
