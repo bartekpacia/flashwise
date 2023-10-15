@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/handlers"
@@ -18,18 +19,16 @@ var db *sqlx.DB
 func main() {
 	router := setUpRouter()
 	db = setUpDB()
-	// Start the server
 	http.ListenAndServe(":8080", router)
 }
 
 func setUpRouter() http.Handler {
 	router := mux.NewRouter()
 
-	// Route handling for /flashcards
 	router.HandleFunc("/flashcards", GetFlashcards).Methods("GET")
 	router.HandleFunc("/flashcards", CreateFlashcard).Methods("POST")
 	router.HandleFunc("/flashcards/{id}", UpdateFlashcard).Methods("PATCH")
-	router.HandleFunc("/flashcards/{id}", DeleteFlashcard).Methods("DELETE")
+	router.HandleFunc("/flashcards", DeleteFlashcard).Methods("DELETE")
 
 	return handlers.LoggingHandler(os.Stdout, router)
 }
@@ -120,18 +119,39 @@ func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteFlashcard(w http.ResponseWriter, r *http.Request) {
-	/*
-		params := mux.Vars(r)
-		id := params["id"]
+	id := r.URL.Query().Get("flashcard_id")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Validation error: flashcard_id query parameter is required\n")
+		return
+	}
 
-		for index, flashcard := range flashcards {
-			if flashcard.ID == id {
-				flashcards = append(flashcards[:index], flashcards[index+1:]...)
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-		}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Validation error: flashcard_id query parameter must be an integer\n")
+		return
+	}
 
-		http.NotFound(w, r)
-	*/
+	result, err := db.Exec("DELETE FROM flashcards WHERE id = ?", idInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error while executing query: %v\n", err)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error while getting rows affected: %v\n", err)
+		return
+	}
+
+	if rowsAffected == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, "Error: flashcard with id %d not found\n", idInt)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
