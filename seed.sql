@@ -5,8 +5,11 @@ USE flashwise;
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(255) UNIQUE NOT NULL,
+  password_hash BINARY(60) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  token VARCHAR(40) DEFAULT NULL,
+  is_admin BOOLEAN DEFAULT FALSE
 );
 
 INSERT INTO users (username, email)
