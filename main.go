@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 )
@@ -29,7 +31,7 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/flashcards/{id}", UpdateFlashcard).Methods("PATCH")
 	router.HandleFunc("/flashcards/{id}", DeleteFlashcard).Methods("DELETE")
 
-	return router
+	return handlers.LoggingHandler(os.Stdout, router)
 }
 
 func setUpDB() *sqlx.DB {
