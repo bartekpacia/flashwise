@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -70,16 +71,30 @@ func GetFlashcards(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
-	/*
-		var flashcard Flashcard
-		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &flashcard)
-		flashcards = append(flashcards, flashcard)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error while reading request body: %v\n", err)
+		return
+	}
 
-		w.Header().Set("Content-Type", "application/json")
+	var f Flashcard
+	err = json.Unmarshal(body, &f)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error while unmarshalling request body: %v\n", err)
+		return
+	}
 
-		w.WriteHeader(http.StatusCreated)
-	*/
+	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
+	_, err = db.Exec(stmt, f.Front, f.Back, f.AuthorID, f.SetID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error while executing query: %v\n", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
