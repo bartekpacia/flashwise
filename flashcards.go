@@ -1,55 +1,123 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 )
 
 func GetFlashcards(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Queryx("SELECT * FROM flashcards")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while executing query: %v\n", err)
+	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+	if !ok {
+		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
 		return
 	}
 
-	flashcards := make([]Flashcard, 0)
-	for rows.Next() {
-		var flashcard Flashcard
-		err := rows.StructScan(&flashcard)
+	flashcardID := r.URL.Query().Get("flashcard_id")
+	setID := r.URL.Query().Get("set_id")
+
+	if flashcardID != "" && setID != "" {
+		http.Error(w, "Only one of flashcard_id and set_id can be specified", http.StatusBadRequest)
+		return
+	} else if flashcardID != "" {
+		// Return flashcard for the user with the specified ID
+		flashcardIDInt, err := strconv.ParseUint(flashcardID, 10, 64)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Error while iterating over rows: %v\n", err)
+			http.Error(w, "Validation error: flashcard_id query parameter must be an integer\n", http.StatusBadRequest)
 			return
 		}
-		flashcards = append(flashcards, flashcard)
-	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(flashcards)
+		var flashcard Flashcard
+		err = db.Get(&flashcard, "SELECT * FROM flashcards WHERE author_id = ? AND id = ?", userID, flashcardIDInt)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error while executing query: %v\n", err), http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(flashcard)
+	} else if setID != "" {
+		// Return all flashcards for the user with the specified set ID
+		setIDInt, err := strconv.ParseUint(setID, 10, 64)
+		if err != nil {
+			http.Error(w, "Validation error: set_id query parameter must be an integer\n", http.StatusBadRequest)
+			return
+		}
+
+		// Check if set exists
+		var exists bool
+		row := db.QueryRow("SELECT * FROM flashcard_sets WHERE id = ?", setIDInt)
+		if row.Scan(exists) != sql.ErrNoRows {
+			http.Error(w, fmt.Sprintf("Error while executing query: %v\n", err), http.StatusInternalServerError)
+			return
+		}
+
+		if !exists {
+			http.Error(w, fmt.Sprintf("Error: set with id %d not found\n", setIDInt), http.StatusNotFound)
+			return
+		}
+
+		rows, err := db.Queryx("SELECT * FROM flashcards WHERE author_id = ? AND set_id = ?", userID, setIDInt)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error while executing query: %v\n", err), http.StatusInternalServerError)
+		}
+
+		flashcards := make([]Flashcard, 0)
+		for rows.Next() {
+			var flashcard Flashcard
+			err := rows.StructScan(&flashcard)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error while iterating over rows: %v\n", err), http.StatusInternalServerError)
+				return
+			}
+			flashcards = append(flashcards, flashcard)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(flashcards)
+	} else {
+		// Return all flashcards for the user
+
+		rows, err := db.Queryx("SELECT * FROM flashcards WHERE author_id = ?", userID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error while executing query: %v\n", err), http.StatusInternalServerError)
+			return
+		}
+
+		flashcards := make([]Flashcard, 0)
+		for rows.Next() {
+			var flashcard Flashcard
+			err := rows.StructScan(&flashcard)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error while iterating over rows: %v\n", err), http.StatusInternalServerError)
+				return
+			}
+			flashcards = append(flashcards, flashcard)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(flashcards)
+	}
 }
 
 func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while reading request body: %v\n", err)
+	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+	if !ok {
+		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
 		return
 	}
 
-	var f Flashcard
-	err = json.Unmarshal(body, &f)
+	var body CreateFlashcardRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Error while unmarshalling request body: %v\n", err)
+		http.Error(w, "Error while decoding request body: %v\n", http.StatusBadRequest)
 		return
 	}
 
 	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
-	_, err = db.Exec(stmt, f.Front, f.Back, f.AuthorID, f.SetID)
+	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Error while executing query: %v\n", err)
