@@ -25,6 +25,8 @@ func main() {
 func setUpRouter() http.Handler {
 	router := mux.NewRouter()
 
+	router.HandleFunc("/register", CreateUser).Methods("POST")
+
 	router.HandleFunc("/flashcards", GetFlashcards).Methods("GET")
 	router.HandleFunc("/flashcards", CreateFlashcard).Methods("POST")
 	router.HandleFunc("/flashcards/{id}", UpdateFlashcard).Methods("PATCH")
@@ -45,6 +47,26 @@ func setUpDB() *sqlx.DB {
 	}
 
 	return db
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user CreateUserRequest
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(user.Password1) < 8 {
+		http.Error(w, "Password must be at least 8 characters long", http.StatusBadRequest)
+		return
+	}
+
+	if user.Password1 != user.Password2 {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
 }
 
 func GetFlashcards(w http.ResponseWriter, r *http.Request) {
