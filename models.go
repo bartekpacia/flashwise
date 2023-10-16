@@ -9,15 +9,15 @@ type CreateUserRequest struct {
 	Password2 string `json:"password2"`
 }
 
-type GetFlashcardsRequest struct {
-	ID    *uint64 `json:"id"`
-	SetID *uint64 `json:"set_id"`
+type CreateFlashcardRequest struct {
+	Front string `json:"front"`
+	Back  string `json:"back"`
+	SetID uint64 `json:"set_id"`
 }
 
-type CreateFlashcardRequest struct {
-	Front string `db:"front"`
-	Back  string `db:"back"`
-	SetID uint64 `db:"set_id"`
+type CreateFlashcardSetRequest struct {
+	Status      bool   `json:"status"`
+	Description string `json:"description"`
 }
 
 type Flashcard struct {
@@ -31,8 +31,13 @@ type Flashcard struct {
 }
 
 type FlashcardSet struct {
-	ID     string `json:"id"`     // Primary key
-	Author User   `json:"author"` // Foreign key to User
+	ID          string     `json:"id"`     // Primary key
+	Author      User       `json:"author"` // Foreign key to User
+	Status      string     `json:"status"`
+	Description string     `json:"description"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ModifiedAt  *time.Time `json:"modified_at"`
+	AuthorID    uint64     `json:"author_id"`
 }
 
 type User struct {

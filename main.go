@@ -30,6 +30,8 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/flashcards/{id}", AuthHandler(UpdateFlashcard)).Methods("PATCH")
 	router.HandleFunc("/flashcards", AuthHandler(DeleteFlashcard)).Methods("DELETE")
 
+	router.HandleFunc("/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
+
 	return handlers.LoggingHandler(os.Stdout, router)
 }
 

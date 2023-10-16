@@ -48,8 +48,9 @@ func GetFlashcards(w http.ResponseWriter, r *http.Request) {
 
 		// Check if set exists
 		var exists bool
-		row := db.QueryRow("SELECT * FROM flashcard_sets WHERE id = ?", setIDInt)
-		if row.Scan(exists) != sql.ErrNoRows {
+		row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM flashcard_sets WHERE id = ?)", setIDInt)
+		err = row.Scan(&exists)
+		if err != nil && err != sql.ErrNoRows {
 			http.Error(w, fmt.Sprintf("Error while executing query: %v\n", err), http.StatusInternalServerError)
 			return
 		}
@@ -115,6 +116,8 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error while decoding request body: %v\n", http.StatusBadRequest)
 		return
 	}
+
+	// TODO: Check if set_id belongs to author_id
 
 	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
 	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
