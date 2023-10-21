@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/handlers"
@@ -15,8 +19,14 @@ import (
 var db *sqlx.DB
 
 func main() {
+	var err error
+
 	router := setUpRouter()
-	db = setUpDB()
+	db, err = setUpDB()
+	if err != nil {
+		log.Fatalln("failed to set up database:", err)
+	}
+
 	http.ListenAndServe(":8080", router)
 }
 
@@ -35,18 +45,60 @@ func setUpRouter() http.Handler {
 	return handlers.LoggingHandler(os.Stdout, router)
 }
 
-func setUpDB() *sqlx.DB {
-	db, err := sqlx.Open("mysql", "root:@(localhost:3306)/flashwise?parseTime=true")
-	if err != nil {
-		panic(err)
+func setUpDB() (*sqlx.DB, error) {
+	host, ok := os.LookupEnv("MYSQL_HOST")
+	if !ok {
+		return nil, errors.New("MYSQL_HOST env var not set")
 	}
 
-	err = db.Ping()
-	if err != nil {
-		panic(err)
+	user, ok := os.LookupEnv("MYSQL_USER")
+	if !ok {
+		return nil, errors.New("MYSQL_USER env var not set")
 	}
 
-	return db
+	password, ok := os.LookupEnv("MYSQL_PASSWORD")
+	if !ok {
+		return nil, errors.New("MYSQL_PASSWORD env var not set")
+	}
+
+	dbName, ok := os.LookupEnv("MYSQL_DB")
+	if !ok {
+		return nil, errors.New("MYSQL_DB env var not set")
+	}
+
+	connString := fmt.Sprintf("%s:%s@(%s:3306)/%s?parseTime=true", user, password, host, dbName)
+
+	fails := 0
+	maxFails := 10
+	for {
+		if fails >= maxFails {
+			return nil, fmt.Errorf("failed to connect to database after %d fails", maxFails)
+		}
+
+		if fails > 0 {
+			time.Sleep(1 * time.Second)
+		}
+
+		db, err := sqlx.Open("mysql", connString)
+		if err != nil {
+			log.Println("failed to connect to database:", err)
+			fails++
+			continue
+		}
+
+		err = db.Ping()
+		if err != nil {
+			log.Println("failed to ping database:", err)
+			fails++
+			continue
+		}
+
+		break
+	}
+
+	log.Println("successfully connected to database")
+
+	return db, nil
 }
 
 type ContextKey string
@@ -69,12 +121,16 @@ func AuthHandler(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc
 
 		token = strings.TrimSpace(splitToken[1])
 
+		log.Println("Received token:", token)
+
 		var user User
 		err := db.Get(&user, "SELECT * FROM users WHERE token = ?", token)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
+
+		log.Println("Found user with ID and username:", user.ID, user.Username)
 
 		ctx := context.WithValue(r.Context(), ContextUserKey, user.ID)
 		next(w, r.WithContext(ctx))

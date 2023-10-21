@@ -3,27 +3,24 @@ version: '3'
 services:
   app:
     build: .
-    image: flashwise
+    # image: flashwise
     ports:
       - 8080:8080
-      - 3306:3306
     depends_on:
       - database
-    networks:
-      - main_network
+    environment:
+      MYSQL_HOST: database
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: flashwise
 
   database:
     image: mysql:8.1
-    environment:
-      MYSQL_ROOT_PASSWORD: ''
-      MYSQL_DATABASE: flashwise
-    ports:
-      - 3306:3306
     volumes:
-      - /data:/var/lib/mysql
-    networks:
-      - main_network
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: flashwise
 
-networks:
-  main_network:
-    name: "flashwise-network"
+volumes:
+  mysql-data:
