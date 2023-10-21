@@ -1,9 +1,9 @@
 USE flashwise;
 
-INSERT INTO users (username, email)
+INSERT INTO users (username, email, is_admin, password_hash, token)
 VALUES
-    ('admin', 'admin@flashwise.com'),
-    ('bartek', 'barpac02@gmail.com');
+    ('admin', 'admin@flashwise.com', TRUE, 'pwhash', 't0k3n'),
+    ('bartek', 'barpac02@gmail.com', FALSE, 'pwhash', 't0k3n');
 
 INSERT INTO flashcard_sets (author_id, description)
 VALUES
