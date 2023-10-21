@@ -1,4 +1,4 @@
-CREATE DATABASE flashwise;
+CREATE DATABASE IF NOT EXISTS flashwise;
 
 USE flashwise;
 
@@ -7,9 +7,9 @@ CREATE TABLE users (
   username VARCHAR(255) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
-  is_admin BOOLEAN DEFAULT FALSE
+  is_admin BOOLEAN DEFAULT FALSE,
   password_hash BINARY(60) NOT NULL,
-  token VARCHAR(40) DEFAULT NULL,
+  token VARCHAR(40) DEFAULT NULL
 );
 
 INSERT INTO users (username, email)
