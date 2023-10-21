@@ -9,7 +9,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT NOW(),
   is_admin BOOLEAN DEFAULT FALSE,
   password_hash BINARY(60) NOT NULL,
-  token VARCHAR(40) DEFAULT NULL
+  token VARCHAR(40) NOT NULL
 );
 
 CREATE TABLE flashcard_sets (
