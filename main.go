@@ -68,6 +68,8 @@ func setUpDB() (*sqlx.DB, error) {
 
 	connString := fmt.Sprintf("%s:%s@(%s:3306)/%s?parseTime=true", user, password, host, dbName)
 
+	var database *sqlx.DB
+	var err error
 	fails := 0
 	maxFails := 10
 	for {
@@ -79,14 +81,14 @@ func setUpDB() (*sqlx.DB, error) {
 			time.Sleep(1 * time.Second)
 		}
 
-		db, err := sqlx.Open("mysql", connString)
+		database, err = sqlx.Open("mysql", connString)
 		if err != nil {
 			log.Println("failed to connect to database:", err)
 			fails++
 			continue
 		}
 
-		err = db.Ping()
+		err = database.Ping()
 		if err != nil {
 			log.Println("failed to ping database:", err)
 			fails++
@@ -98,7 +100,7 @@ func setUpDB() (*sqlx.DB, error) {
 
 	log.Println("successfully connected to database")
 
-	return db, nil
+	return database, nil
 }
 
 type ContextKey string
@@ -121,16 +123,12 @@ func AuthHandler(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc
 
 		token = strings.TrimSpace(splitToken[1])
 
-		log.Println("Received token:", token)
-
 		var user User
 		err := db.Get(&user, "SELECT * FROM users WHERE token = ?", token)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
-
-		log.Println("Found user with ID and username:", user.ID, user.Username)
 
 		ctx := context.WithValue(r.Context(), ContextUserKey, user.ID)
 		next(w, r.WithContext(ctx))
