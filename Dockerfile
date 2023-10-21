@@ -1,7 +1,12 @@
 FROM golang:1.21 AS build
 
-COPY . /tmp/flashwise
 WORKDIR /tmp/flashwise
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY *.go /tmp/flashwise
 
 RUN go build .
 
