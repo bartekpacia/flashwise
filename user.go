@@ -25,7 +25,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(body.Password1) < 8 {
-		http.Error(w, "Password must be at least 8 bytes long", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Password must be at least 8 bytes long (got %d)", len(body.Password1)), http.StatusBadRequest)
 		return
 	}
 
