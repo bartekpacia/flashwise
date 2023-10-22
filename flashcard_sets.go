@@ -6,6 +6,28 @@ import (
 	"net/http"
 )
 
+func GetFlashcardSet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+	if !ok {
+		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
+		return
+	}
+
+	var sets []FlashcardSet
+	err := db.Select(&sets, "SELECT * FROM flashcard_sets WHERE author_id = ?", userID)
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(sets)
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to encode response", err), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+}
+
 func CreateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(ContextUserKey).(uint64)
 	if !ok {
@@ -16,7 +38,7 @@ func CreateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 	var body CreateFlashcardSetRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		http.Error(w, "Error while decoding request body: %v\n", http.StatusBadRequest)
+		http.Error(w, fmt.Sprint("failed to decode request body: %v\n", err), http.StatusBadRequest)
 		return
 	}
 
