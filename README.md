@@ -58,3 +58,7 @@ docker exec -it flashwise-database-1 mysql -u root -psecret -e "USE flashwise; S
 ```
 docker exec -it flashwise-database-1 mysql -u root -psecret -e "USE flashwise; SELECT id, front, back, author_id FROM flashcards;"
 ```
+
+# Resources
+
+- [Illustrated guide to SQLX](https://jmoiron.github.io/sqlx)
