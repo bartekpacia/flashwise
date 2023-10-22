@@ -26,8 +26,8 @@ type Flashcard struct {
 	Back       string     `json:"back"`
 	CreatedAt  time.Time  `json:"created_at" db:"created_at"`
 	ModifiedAt *time.Time `json:"modified_at" db:"modified_at"`
-	SetID      uint64     `json:"set_id" db:"set_id"`       // Foreign key to FlashcardSet
-	AuthorID   uint64     `json:"author_id" db:"author_id"` // Foreign key to User
+	SetID      uint64     `json:"flashcard_set" db:"set_id"` // Foreign key to FlashcardSet
+	AuthorID   uint64     `json:"author_id" db:"author_id"`  // Foreign key to User
 }
 
 type FlashcardSet struct {

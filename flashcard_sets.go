@@ -38,11 +38,9 @@ func CreateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 	var body CreateFlashcardSetRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		http.Error(w, fmt.Sprint("failed to decode request body: %v\n", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to decode request body: %v\n", err), http.StatusBadRequest)
 		return
 	}
-
-	// TODO: Check if set_id belongs to author_id
 
 	stmt := "INSERT INTO flashcard_sets (author_id, description) VALUES (?, ?)"
 	_, err = db.Exec(stmt, userID, body.Description)

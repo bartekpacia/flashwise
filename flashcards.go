@@ -117,7 +117,22 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Check if set_id belongs to author_id
+	var set FlashcardSet
+	err = db.Get(set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, fmt.Sprintf("set with ID %d does not exist\n", body.SetID), http.StatusNotFound)
+			return
+		} else {
+			http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if set.AuthorID != userID {
+		http.Error(w, fmt.Sprintf("set with ID %d does not belong to user %d\n", body.SetID, userID), http.StatusNotFound)
+		return
+	}
 
 	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
 	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
