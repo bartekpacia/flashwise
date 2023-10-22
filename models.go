@@ -12,7 +12,7 @@ type CreateUserRequest struct {
 type CreateFlashcardRequest struct {
 	Front string `json:"front"`
 	Back  string `json:"back"`
-	SetID uint64 `json:"set_id"`
+	SetID uint64 `json:"flashcard_set"`
 }
 
 type CreateFlashcardSetRequest struct {
