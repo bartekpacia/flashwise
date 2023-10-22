@@ -23,6 +23,7 @@ func GetFlashcardSet(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(sets)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to encode response", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -38,15 +39,14 @@ func CreateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 	var body CreateFlashcardSetRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to decode request body: %v\n", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintln("failed to decode request body:", err), http.StatusBadRequest)
 		return
 	}
 
 	stmt := "INSERT INTO flashcard_sets (author_id, description) VALUES (?, ?)"
 	_, err = db.Exec(stmt, userID, body.Description)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while executing query: %v\n", err)
+		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
 		return
 	}
 

@@ -113,12 +113,12 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 	var body CreateFlashcardRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		http.Error(w, "Error while decoding request body: %v\n", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintln("failed to decode request body:", err), http.StatusBadRequest)
 		return
 	}
 
 	var set FlashcardSet
-	err = db.Get(set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
+	err = db.Get(&set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, fmt.Sprintf("set with ID %d does not exist\n", body.SetID), http.StatusNotFound)
@@ -137,8 +137,7 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
 	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while executing query: %v\n", err)
+		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
 		return
 	}
 
