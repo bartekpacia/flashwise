@@ -43,6 +43,9 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
 	router.HandleFunc("/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
 
+	router.HandleFunc("/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
+	router.HandleFunc("/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
+
 	return handlers.LoggingHandler(os.Stdout, router)
 }
 
