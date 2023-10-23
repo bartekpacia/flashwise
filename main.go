@@ -37,7 +37,7 @@ func setUpRouter() http.Handler {
 
 	router.HandleFunc("/flashcards", AuthHandler(GetFlashcards)).Methods("GET")
 	router.HandleFunc("/flashcards", AuthHandler(CreateFlashcard)).Methods("POST")
-	router.HandleFunc("/flashcards/{id}", AuthHandler(UpdateFlashcard)).Methods("PATCH")
+	router.HandleFunc("/flashcards/{id}", AuthHandler(UpdateFlashcard)).Methods("PATCH", "PUT")
 	router.HandleFunc("/flashcards", AuthHandler(DeleteFlashcard)).Methods("DELETE")
 
 	router.HandleFunc("/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
