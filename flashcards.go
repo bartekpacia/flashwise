@@ -136,7 +136,11 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
+	stmt := `
+		INSERT INTO flashcards
+			(front, back, author_id, set_id)
+		VALUES
+			(?, ?, ?, ?)`
 	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
@@ -171,7 +175,8 @@ func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
 		SET
 			f.front = ?,
 			f.back = ?,
-			f.set_id = ?
+			f.set_id = ?,
+			f.modified_at = NOW()
 		WHERE
 			f.id = ? AND
 			f.author_id = ? AND
