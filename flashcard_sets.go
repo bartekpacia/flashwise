@@ -13,7 +13,7 @@ func GetFlashcardSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var sets []FlashcardSet
+	sets := make([]FlashcardSet, 0)
 	err := db.Select(&sets, "SELECT * FROM flashcard_sets WHERE author_id = ?", userID)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)

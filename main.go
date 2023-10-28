@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/felixge/httpsnoop"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 )
@@ -34,20 +34,20 @@ func main() {
 func setUpRouter() http.Handler {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/register", CreateUser).Methods("POST")
+	router.HandleFunc("/api/register", CreateUser).Methods("POST")
 
-	router.HandleFunc("/flashcards", AuthHandler(GetFlashcards)).Methods("GET")
-	router.HandleFunc("/flashcards", AuthHandler(CreateFlashcard)).Methods("POST")
-	router.HandleFunc("/flashcards/{id}", AuthHandler(UpdateFlashcard)).Methods("PATCH", "PUT")
-	router.HandleFunc("/flashcards", AuthHandler(DeleteFlashcard)).Methods("DELETE")
+	router.HandleFunc("/api/flashcards", AuthHandler(GetFlashcards)).Methods("GET")
+	router.HandleFunc("/api/flashcards", AuthHandler(CreateFlashcard)).Methods("POST")
+	router.HandleFunc("/api/flashcards/{id}", AuthHandler(UpdateFlashcard)).Methods("PATCH", "PUT")
+	router.HandleFunc("/api/flashcards", AuthHandler(DeleteFlashcard)).Methods("DELETE")
 
-	router.HandleFunc("/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
-	router.HandleFunc("/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
+	router.HandleFunc("/api/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
+	router.HandleFunc("/api/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
 
-	router.HandleFunc("/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
-	router.HandleFunc("/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
+	router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
+	router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
 
-	return handlers.LoggingHandler(os.Stdout, CORSHandler(router.ServeHTTP))
+	return TrailingSlashHandler(LogHandler(CORSHandler(router.ServeHTTP)))
 }
 
 func setUpDB() (*sqlx.DB, error) {
@@ -163,6 +163,8 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 			if slices.Contains(allowedOrigins, origin) && slices.Contains(allowedMethods, method) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowedMethods, ", "))
+				w.Header().Set("Access-Control-Allow-Headers", "*, Authorization")
+				w.Header().Set("Vary", "Origin")
 			}
 
 			return
@@ -173,6 +175,21 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Vary", "Origin")
 		}
 
+		next(w, r)
+	})
+}
+
+func LogHandler(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf(`%s START "%s %s"`, r.RemoteAddr, r.Method, r.URL.Path)
+		m := httpsnoop.CaptureMetrics(next, w, r)
+		log.Printf(`%s END "%s %s", returned %d, took %d ms"`, r.RemoteAddr, r.Method, r.URL.Path, m.Code, m.Duration.Milliseconds())
+	})
+}
+
+func TrailingSlashHandler(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
 		next(w, r)
 	})
 }
