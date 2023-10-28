@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -46,7 +47,7 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
 	router.HandleFunc("/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
 
-	return handlers.LoggingHandler(os.Stdout, router)
+	return handlers.LoggingHandler(os.Stdout, CORSHandler(router.ServeHTTP))
 }
 
 func setUpDB() (*sqlx.DB, error) {
@@ -111,7 +112,7 @@ type ContextKey string
 
 const ContextUserKey ContextKey = "user_id"
 
-func AuthHandler(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func AuthHandler(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 		if token == "" {
@@ -136,5 +137,42 @@ func AuthHandler(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc
 
 		ctx := context.WithValue(r.Context(), ContextUserKey, user.ID)
 		next(w, r.WithContext(ctx))
+	})
+}
+
+var (
+	allowedOrigins = []string{"http://localhost:3000"}
+	allowedMethods = []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}
+)
+
+func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
+	isPreflight := func(r *http.Request) bool {
+		return r.Method == "OPTIONS" &&
+			r.Header.Get("Origin") != "" &&
+			r.Header.Get("Access-Control-Request-Method") != ""
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+
+		if isPreflight(r) {
+			log.Println("got preflight request")
+			log.Println("origin:", origin)
+
+			method := r.Header.Get("Access-Control-Request-Method")
+			if slices.Contains(allowedOrigins, origin) && slices.Contains(allowedMethods, method) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowedMethods, ", "))
+			}
+
+			return
+		}
+
+		if slices.Contains(allowedOrigins, origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
+
+		next(w, r)
 	})
 }
