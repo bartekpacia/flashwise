@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-http POST localhost:8080/flashcards \
-    id="1" \
-    question="What is the capital of the United States?" \
-    answer="Washington, D.C."
-
-http GET localhost:8080/flashcards

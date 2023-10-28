@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func GetFlashcards(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +136,11 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stmt := "INSERT INTO flashcards (front, back, author_id, set_id) VALUES (?, ?, ?, ?)"
+	stmt := `
+		INSERT INTO flashcards
+			(front, back, author_id, set_id)
+		VALUES
+			(?, ?, ?, ?)`
 	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
@@ -145,57 +151,74 @@ func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
-	/*
-		params := mux.Vars(r)
-		id := params["id"]
+	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+	if !ok {
+		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
+		return
+	}
 
-		for index, flashcard := range flashcards {
-			if flashcard.ID == id {
-				var updatedFlashcard Flashcard
-				_ = json.NewDecoder(r.Body).Decode(&updatedFlashcard)
-				flashcards[index] = updatedFlashcard
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(updatedFlashcard)
-				return
-			}
-		}
+	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Validation error: id route variable is missing or not uint64", http.StatusBadRequest)
+		return
+	}
 
-		http.NotFound(w, r)
-	*/
+	var body CreateFlashcardRequest
+	err = json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to decode request body:", err), http.StatusBadRequest)
+		return
+	}
+
+	stmt := `
+		UPDATE flashcards f
+		SET
+			f.front = ?,
+			f.back = ?,
+			f.set_id = ?,
+			f.modified_at = NOW()
+		WHERE
+			f.id = ? AND
+			f.author_id = ? AND
+			EXISTS (
+				SELECT 1
+				FROM flashcard_sets s
+				WHERE s.id = f.set_id AND s.author_id = f.author_id
+			)`
+	_, err = db.Exec(stmt, body.Front, body.Back, body.SetID, id, userID)
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func DeleteFlashcard(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("flashcard_id")
-	if id == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Validation error: flashcard_id query parameter is required\n")
+	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+	if !ok {
+		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
 		return
 	}
 
-	idInt, err := strconv.Atoi(id)
+	id, err := strconv.ParseUint(r.URL.Query().Get("flashcard_id"), 10, 64)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Validation error: flashcard_id query parameter must be an integer\n")
+		http.Error(w, "Validation error: flashcard_id query parameter is missing or not uint64", http.StatusBadRequest)
 		return
 	}
 
-	result, err := db.Exec("DELETE FROM flashcards WHERE id = ?", idInt)
+	result, err := db.Exec("DELETE FROM flashcards WHERE id = ? AND author_id = ?", id, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Error while executing query: %v\n", err)
 		return
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while getting rows affected: %v\n", err)
-		return
-	}
+	rowsAffected, _ := result.RowsAffected()
 
 	if rowsAffected == 0 {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Error: flashcard with id %d not found\n", idInt)
+		fmt.Fprintf(w, "Error: flashcard with id %d not found\n", id)
 		return
 	}
 

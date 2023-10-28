@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Creating user"
+
+# response="$(http POST localhost:8080/register \
+#     username="IntegrationTester" \
+#     email="integration.tester@gmail.com" \
+#     password1="tiger123" \
+#     password2="tiger123"
+# )"
+
+# token="$(echo $response | jq --raw-output .token)"
+
+token="$(http POST localhost:8080/register \
+    username="IntegrationTester" \
+    email="integration.tester@gmail.com" \
+    password1="tiger123" \
+    password2="tiger123" | jq --raw-output '.token')"
+
+echo "Creating flashcard set"
+
+http POST localhost:8080/sets \
+    "Authorization: Token $token" \
+    is_public:=true \
+    name='Geography'
+
+echo "Listing flashcards set to get the last one"
+flashcard_set_id="$(http GET localhost:8080/sets \
+    "Authorization: Token $token" | jq --raw-output 'last | .id')"
+
+echo "Adding flashcard 1"
+
+http POST localhost:8080/flashcards \
+    "Authorization: Token $token" \
+    flashcard_set:="$flashcard_set_id" \
+    front="Capital of the United States" \
+    back="Washington, D.C."
+
+echo "Adding flashcard 2"
+
+http POST localhost:8080/flashcards \
+    "Authorization: Token $token" \
+    flashcard_set:="$flashcard_set_id" \
+    front="Capital of France" \
+    back="Paris"
+
+echo "Adding flashcard 3"
+
+http POST localhost:8080/flashcards \
+    "Authorization: Token $token" \
+    flashcard_set:="$flashcard_set_id" \
+    front="Capital of Japan" \
+    back="Tokyo"
+
+echo "Adding flashcard 4"
+
+http POST localhost:8080/flashcards \
+    "Authorization: Token $token" \
+    flashcard_set:="$flashcard_set_id" \
+    front="Capital of Brazil" \
+    back="Brasília"
+
+echo "Listing flashcards in the set"
+
+http GET localhost:8080/flashcards \
+	"Authorization: Token $token" \
+	flashcard_set=="$flashcard_set_id"
