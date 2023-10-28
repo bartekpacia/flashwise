@@ -11,8 +11,6 @@ type generateQuizRequest struct {
 	SetID uint64 `json:"flashcard_set_id"`
 }
 
-type generateQuizResponse struct{}
-
 func GenerateQuiz(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(ContextUserKey).(uint64)
 	if !ok {
