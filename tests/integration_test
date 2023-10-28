@@ -22,8 +22,8 @@ echo "Creating flashcard set"
 
 http POST localhost:8080/sets \
     "Authorization: Token $token" \
-    status:=true \
-    description='Geography'
+    is_public:=true \
+    name='Geography'
 
 echo "Listing flashcards set to get the last one"
 flashcard_set_id="$(http GET localhost:8080/sets \

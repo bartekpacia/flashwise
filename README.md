@@ -19,8 +19,8 @@ Backend for the Flashwise app.
    ```
    http POST localhost:8080/sets \
        'Authorization: Token 6d0c1a5ecb334e176c5d13e8d24c282a8b45684d' \
-       status:=true \
-       description='Geography'
+       is_public:=true \
+       name='Geography'
    ```
 
 1. Get user's flashcard sets:

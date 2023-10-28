@@ -43,12 +43,20 @@ func CreateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stmt := "INSERT INTO flashcard_sets (author_id, description) VALUES (?, ?)"
-	_, err = db.Exec(stmt, userID, body.Description)
+	stmt := "INSERT INTO flashcard_sets (author_id, title, is_public) VALUES (?, ?, ?)"
+	result, err := db.Exec(stmt, userID, body.Title, body.Public)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
 		return
 	}
 
+	id, _ := result.LastInsertId()
+	err = json.NewEncoder(w).Encode(map[string]uint64{"id": uint64(id)})
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to encode response", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }

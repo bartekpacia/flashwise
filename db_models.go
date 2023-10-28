@@ -13,12 +13,12 @@ type Flashcard struct {
 }
 
 type FlashcardSet struct {
-	ID          uint64     `json:"id" db:"id" ` // Primary key
-	Status      string     `json:"stats" db:"status" `
-	Description string     `json:"name" db:"description" `
-	CreatedAt   time.Time  `json:"created_at" db:"created_at" `
-	ModifiedAt  *time.Time `json:"modified_at" db:"modified_at" `
-	AuthorID    uint64     `json:"author_id" db:"author_id" ` // Foreign key to User
+	ID         uint64     `json:"id" db:"id" ` // Primary key
+	Public     string     `json:"is_public" db:"is_public" `
+	Title      string     `json:"name" db:"title" `
+	CreatedAt  time.Time  `json:"created_at" db:"created_at" `
+	ModifiedAt *time.Time `json:"modified_at" db:"modified_at" `
+	AuthorID   uint64     `json:"author_id" db:"author_id" ` // Foreign key to User
 }
 
 type User struct {

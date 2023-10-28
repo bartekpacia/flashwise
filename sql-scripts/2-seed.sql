@@ -5,7 +5,7 @@ VALUES
     ('admin', 'admin@flashwise.com', TRUE, '$2a$14$y1kbWJKhY5b2u8JwOmlbuOWLTY6tK9fsXYZ.btRImHl1o0Nh4Dfx2', 'c8dd1617cf1f35965cb8d2f827f4c2d834f2958b'),
     ('bartek', 'barpac02@gmail.com', FALSE, '$2a$14$.w8xD7D9IGe3.ju4gSaviO/2BtX/137Rg3XhsLFj9roHr.pw718pi', '6d0c1a5ecb334e176c5d13e8d24c282a8b45684d');
 
-INSERT INTO flashcard_sets (author_id, description)
+INSERT INTO flashcard_sets (author_id, title)
 VALUES
     (2, 'Ciekawostki o Polsce');
 

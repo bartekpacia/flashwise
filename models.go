@@ -14,6 +14,7 @@ type CreateFlashcardRequest struct {
 }
 
 type CreateFlashcardSetRequest struct {
-	Status      bool   `json:"status"`
-	Description string `json:"description"`
+	Status bool   `json:"status"`
+	Title  string `json:"name"`
+	Public bool   `json:"is_public"`
 }
