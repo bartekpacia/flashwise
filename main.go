@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"slices"
@@ -15,6 +15,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/lmittmann/tint"
 )
 
 var db *sqlx.DB
@@ -22,13 +23,21 @@ var db *sqlx.DB
 func main() {
 	var err error
 
+	setUpLogger()
 	router := setUpRouter()
-	db, err = setUpDB()
+	db, err = connectDB()
 	if err != nil {
-		log.Fatalln("failed to set up database:", err)
+		slog.Error("failed to connect to database", "error", err)
 	}
 
 	http.ListenAndServe(":8080", router)
+}
+
+func setUpLogger() {
+	opts := &tint.Options{TimeFormat: time.TimeOnly}
+	handler := tint.NewHandler(os.Stdout, opts)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 }
 
 func setUpRouter() http.Handler {
@@ -50,7 +59,7 @@ func setUpRouter() http.Handler {
 	return TrailingSlashHandler(LogHandler(CORSHandler(router.ServeHTTP)))
 }
 
-func setUpDB() (*sqlx.DB, error) {
+func connectDB() (*sqlx.DB, error) {
 	host, ok := os.LookupEnv("MYSQL_HOST")
 	if !ok {
 		return nil, errors.New("MYSQL_HOST env var not set")
@@ -88,14 +97,14 @@ func setUpDB() (*sqlx.DB, error) {
 
 		database, err = sqlx.Open("mysql", connString)
 		if err != nil {
-			log.Println("failed to connect to database:", err)
+			slog.Warn("failed to open connection to database", err)
 			fails++
 			continue
 		}
 
 		err = database.Ping()
 		if err != nil {
-			log.Println("failed to ping database:", err)
+			slog.Warn("failed to ping database", err)
 			fails++
 			continue
 		}
@@ -103,7 +112,7 @@ func setUpDB() (*sqlx.DB, error) {
 		break
 	}
 
-	log.Println("successfully connected to database")
+	slog.Info("connected to database", "host", host, "user", user, "db_name", dbName)
 
 	return database, nil
 }
@@ -156,9 +165,6 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 		origin := r.Header.Get("Origin")
 
 		if isPreflight(r) {
-			log.Println("got preflight request")
-			log.Println("origin:", origin)
-
 			method := r.Header.Get("Access-Control-Request-Method")
 			if slices.Contains(allowedOrigins, origin) && slices.Contains(allowedMethods, method) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -181,9 +187,9 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 
 func LogHandler(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf(`%s START "%s %s"`, r.RemoteAddr, r.Method, r.URL.Path)
+		slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path)
 		m := httpsnoop.CaptureMetrics(next, w, r)
-		log.Printf(`%s END "%s %s", returned %d, took %d ms"`, r.RemoteAddr, r.Method, r.URL.Path, m.Code, m.Duration.Milliseconds())
+		slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path, "status_code", m.Code, "duration", m.Duration.Milliseconds())
 	})
 }
 
