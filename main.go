@@ -53,6 +53,8 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/api/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
 	router.HandleFunc("/api/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
 
+	router.HandleFunc("/api/categories", AuthHandler(GetCategories)).Methods("GET")
+
 	router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
 	router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
 
@@ -97,14 +99,14 @@ func connectDB() (*sqlx.DB, error) {
 
 		database, err = sqlx.Open("mysql", connString)
 		if err != nil {
-			slog.Warn("failed to open connection to database", err)
+			slog.Warn("failed to open connection to database", "error", err)
 			fails++
 			continue
 		}
 
 		err = database.Ping()
 		if err != nil {
-			slog.Warn("failed to ping database", err)
+			slog.Warn("failed to ping database", "error", err)
 			fails++
 			continue
 		}

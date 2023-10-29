@@ -18,7 +18,14 @@ type FlashcardSet struct {
 	Title      string     `json:"name" db:"title" `
 	CreatedAt  time.Time  `json:"created_at" db:"created_at" `
 	ModifiedAt *time.Time `json:"modified_at" db:"modified_at" `
-	AuthorID   uint64     `json:"author_id" db:"author_id" ` // Foreign key to User
+	AuthorID   uint64     `json:"author_id" db:"author_id" `     // Foreign key to User
+	CategoryID uint64     `json:"category_id" db:"category_id" ` // Foreign key to Category
+}
+
+type Category struct {
+	ID    uint64 `json:"id" db:"id" ` // Primary key
+	Title string `json:"name" db:"title" `
+	Slug  string `json:"slug" db:"slug" `
 }
 
 type User struct {
