@@ -52,6 +52,7 @@ func setUpRouter() http.Handler {
 
 	router.HandleFunc("/api/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
 	router.HandleFunc("/api/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
+	router.HandleFunc("/api/sets/{id}", AuthHandler(DeleteFlashcardSet)).Methods("DELETE")
 
 	router.HandleFunc("/api/category", AuthHandler(GetCategories)).Methods("GET")
 
