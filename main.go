@@ -35,7 +35,7 @@ func main() {
 
 func setUpLogger() {
 	opts := &tint.Options{TimeFormat: time.TimeOnly}
-	handler := tint.NewHandler(os.Stdout, opts)
+	handler := tint.NewHandler(os.Stdout, opts)	
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 }
