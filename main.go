@@ -170,6 +170,7 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowedMethods, ", "))
 				w.Header().Set("Access-Control-Allow-Headers", "*, Authorization")
+				w.Header().Set("Access-Control-Max-Age", "86400")
 				w.Header().Set("Vary", "Origin")
 			}
 
