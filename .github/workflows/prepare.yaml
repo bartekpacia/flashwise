@@ -42,4 +42,4 @@ jobs:
         run: pip install sqlfluff
 
       - name: Verify SQL formatting
-        run: sqlfluff lint --nocolor --quiet
+        run: sqlfluff lint sql-scripts/*.sql --dialect mysql
