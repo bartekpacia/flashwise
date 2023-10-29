@@ -19,7 +19,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Verify code formatting
+      - name: Verify Go code formatting
         run: |
           go install mvdan.cc/gofumpt@latest
           test -z $(gofumpt -l .)
@@ -33,3 +33,13 @@ jobs:
       - name: Run tests with coverage
         if: always()
         run: go test -cover ./...
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+
+      - name: Verify SQL formatting
+        run: sqlfluff lint --nocolor --quiet

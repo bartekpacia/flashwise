@@ -53,7 +53,7 @@ func setUpRouter() http.Handler {
 	router.HandleFunc("/api/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
 	router.HandleFunc("/api/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
 
-	router.HandleFunc("/api/categories", AuthHandler(GetCategories)).Methods("GET")
+	router.HandleFunc("/api/category", AuthHandler(GetCategories)).Methods("GET")
 
 	router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
 	router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
@@ -87,7 +87,7 @@ func connectDB() (*sqlx.DB, error) {
 	var database *sqlx.DB
 	var err error
 	fails := 0
-	maxFails := 10
+	maxFails := 60
 	for {
 		if fails >= maxFails {
 			return nil, fmt.Errorf("failed to connect to database after %d fails", maxFails)
