@@ -19,7 +19,7 @@ type FlashcardSetRepository interface {
 	GetAll(ctx context.Context) ([]FlashcardSet, error)
 	GetById(ctx context.Context) (*FlashcardSet, error)
 
-	Create(ctx context.Context, title string, public bool, categoryID uint64) error
+	Create(ctx context.Context, title string, public bool, categoryID uint64) (*uint64, error)
 
 	Delete(ctx context.Context, id uint64) error
 }

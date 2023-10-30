@@ -1,17 +1,25 @@
-package main
+package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/bartekpacia/flashwise/internal/domain"
 	"github.com/gorilla/mux"
 )
 
-func GetFlashcards(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+type createFlashcardRequest struct {
+	Front string `json:"front"`
+	Back  string `json:"back"`
+	SetID uint64 `json:"flashcard_set"`
+}
+
+func (a *api) getFlashcards(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(uint64)
 	if !ok {
 		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
 		return
@@ -105,57 +113,54 @@ func GetFlashcards(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateFlashcard(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(ContextUserKey).(uint64)
+func (a *api) createFlashcard(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(uint64)
 	if !ok {
 		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
 		return
 	}
 
-	var body CreateFlashcardRequest
+	var body createFlashcardRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to decode request body:", err), http.StatusBadRequest)
 		return
 	}
 
-	var set FlashcardSet
-	err = db.Get(&set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, fmt.Sprintf("set with ID %d does not exist\n", body.SetID), http.StatusNotFound)
-			return
-		} else {
-			http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-			return
-		}
-	}
+	// var set FlashcardSet
+	// err = db.Get(&set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
+	// if err != nil {
+	// 	if err == sql.ErrNoRows {
+	// 		http.Error(w, fmt.Sprintf("set with ID %d does not exist\n", body.SetID), http.StatusNotFound)
+	// 		return
+	// 	} else {
+	// 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// }
 
-	if set.AuthorID != userID {
-		http.Error(w, fmt.Sprintf("set with ID %d does not belong to user %d\n", body.SetID, userID), http.StatusNotFound)
-		return
-	}
+	// if set.AuthorID != userID {
+	// 	http.Error(w, fmt.Sprintf("set with ID %d does not belong to user %d\n", body.SetID, userID), http.StatusNotFound)
+	// 	return
+	// }
 
-	stmt := `
-		INSERT INTO flashcards
-			(front, back, author_id, set_id)
-		VALUES
-			(?, ?, ?, ?)`
-	_, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
-	if err != nil {
-		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-		return
-	}
+	// stmt := `
+	// 	INSERT INTO flashcards
+	// 		(front, back, author_id, set_id)
+	// 	VALUES
+	// 		(?, ?, ?, ?)`
+	// _, err = db.Exec(stmt, body.Front, body.Back, userID, body.SetID)
+	// if err != nil {
+	// 	http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(ContextUserKey).(uint64)
-	if !ok {
-		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
-		return
-	}
+func (a *api) updateFlashcard(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
@@ -163,43 +168,21 @@ func UpdateFlashcard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body CreateFlashcardRequest
+	var body createFlashcardRequest
 	err = json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to decode request body:", err), http.StatusBadRequest)
 		return
 	}
 
-	stmt := `
-		UPDATE flashcards f
-		SET
-			f.front = ?,
-			f.back = ?,
-			f.set_id = ?,
-			f.modified_at = NOW()
-		WHERE
-			f.id = ? AND
-			f.author_id = ? AND
-			EXISTS (
-				SELECT 1
-				FROM flashcard_sets s
-				WHERE s.id = f.set_id AND s.author_id = f.author_id
-			)`
-	_, err = db.Exec(stmt, body.Front, body.Back, body.SetID, id, userID)
-	if err != nil {
-		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-		return
-	}
+	a.flashcardRepo.Update(ctx, id, body.Front, body.Back, body.SetID)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteFlashcard(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(ContextUserKey).(uint64)
-	if !ok {
-		http.Error(w, "user ID is not present in context", http.StatusInternalServerError)
-		return
-	}
+func (a *api) deleteFlashcard(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	id, err := strconv.ParseUint(r.URL.Query().Get("flashcard_id"), 10, 64)
 	if err != nil {
@@ -207,19 +190,15 @@ func DeleteFlashcard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec("DELETE FROM flashcards WHERE id = ? AND author_id = ?", id, userID)
+	err = a.flashcardRepo.Delete(ctx, id)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while executing query: %v\n", err)
-		return
-	}
-
-	rowsAffected, _ := result.RowsAffected()
-
-	if rowsAffected == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Error: flashcard with id %d not found\n", id)
-		return
+		if err == domain.ErrNotFound {
+			http.Error(w, fmt.Sprintf("error: flashcard with id %d not found\n", id), http.StatusNotFound)
+			return
+		} else {
+			http.Error(w, fmt.Sprintf("error while executing query: %v\n", err), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

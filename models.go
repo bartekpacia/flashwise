@@ -7,12 +7,6 @@ type CreateUserRequest struct {
 	Password2 string `json:"password2"`
 }
 
-type CreateFlashcardRequest struct {
-	Front string `json:"front"`
-	Back  string `json:"back"`
-	SetID uint64 `json:"flashcard_set"`
-}
-
 type CreateFlashcardSetRequest struct {
 	Title      string `json:"name"`
 	Public     bool   `json:"is_public"`

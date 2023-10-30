@@ -1,2 +1,3 @@
 # ignore the generated binary
 flashwise
+!cmd/flashwise

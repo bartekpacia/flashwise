@@ -18,13 +18,13 @@ type Flashcard struct {
 // All contexts must contain userID.
 
 type FlashcardRepository interface {
-	GetAll(ctx context.Context) error
+	GetAll(ctx context.Context) ([]Flashcard, error)
 	GetByID(ctx context.Context, id uint64) (*Flashcard, error)
 	GetBySetID(ctx context.Context, setID uint64) ([]Flashcard, error)
 
-	Create(ctx context.Context, front string, back bool, setID uint64) error
-	Update(ctx context.Context, front string, back bool, setID uint64) error
+	Create(ctx context.Context, front string, back string, setID uint64) (*uint64, error)
+	Update(ctx context.Context, id uint64, front string, back string, setID uint64) error
 
 	Delete(ctx context.Context, id uint64) error
-	DeleteAll(ctx context.Context, ids ...uint64) error
+	// DeleteBySetID(ctx context.Context, setID uint64) error
 }
