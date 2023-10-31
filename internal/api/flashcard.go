@@ -103,8 +103,8 @@ func (a *api) createFlashcard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]uint64{"id": *id})
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]uint64{"id": id})
 }
 
 func (a *api) updateFlashcard(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +127,7 @@ func (a *api) updateFlashcard(w http.ResponseWriter, r *http.Request) {
 	err = a.flashcardRepo.Update(ctx, id, body.Front, body.Back, body.SetID)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("failed to update flashcard:", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -62,14 +62,9 @@ func (a *api) createFlashcardSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(map[string]uint64{"id": *id})
-	if err != nil {
-		http.Error(w, fmt.Sprintln("failed to encode response", err), http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]uint64{"id": id})
 }
 
 func (a *api) deleteFlashcardSet(w http.ResponseWriter, r *http.Request) {

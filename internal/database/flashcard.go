@@ -25,7 +25,7 @@ func (r *flashcardRepo) GetAll(ctx context.Context) ([]domain.Flashcard, error) 
 	err := r.db.GetContext(ctx, &flashcards, "SELECT * FROM flashcards WHERE author_id = ?", userID)
 	if err != nil {
 		// TODO: handle no rows error
-		return nil, err
+		return nil, fmt.Errorf("failed to get all flashcards: %v", err)
 	}
 
 	return flashcards, nil
@@ -41,7 +41,7 @@ func (r *flashcardRepo) GetByID(ctx context.Context, id uint64) (*domain.Flashca
 	err := r.db.GetContext(ctx, &flashcard, "SELECT * FROM flashcards WHERE author_id = ? AND id = ?", userID, id)
 	if err != nil {
 		// TODO: handle no rows error
-		return nil, err
+		return nil, fmt.Errorf("failed to get flashcard by id: %v", err)
 	}
 
 	return &flashcard, nil
@@ -69,26 +69,26 @@ func (r *flashcardRepo) GetBySetID(ctx context.Context, setID uint64) ([]domain.
 	err = r.db.SelectContext(ctx, &flashcards, "SELECT * FROM flashcards WHERE author_id = ? AND set_id = ?", userID, setID)
 	if err != nil {
 		// TODO: handle no rows error
-		return nil, err
+		return nil, fmt.Errorf("failed to get flashcards by set id: %v", err)
 	}
 
 	return flashcards, nil
 }
 
-func (r *flashcardRepo) Create(ctx context.Context, front string, back string, setID uint64) (*uint64, error) {
+func (r *flashcardRepo) Create(ctx context.Context, front string, back string, setID uint64) (uint64, error) {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
-		return nil, domain.ErrNoUserID
+		return 0, domain.ErrNoUserID
 	}
 
 	// Verify that the flashcard set belongs to the user with userID
 	var set domain.FlashcardSet
 	err := r.db.GetContext(ctx, &set, "SELECT * FROM flashcard_sets WHERE id = ?", setID)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	if set.AuthorID != userID {
-		return nil, fmt.Errorf("set with ID %d does not belong to user %d", setID, userID)
+		return 0, fmt.Errorf("set with ID %d does not belong to user %d", setID, userID)
 	}
 
 	stmt := `
@@ -98,12 +98,11 @@ func (r *flashcardRepo) Create(ctx context.Context, front string, back string, s
 			(?, ?, ?, ?)`
 	result, err := r.db.ExecContext(ctx, stmt, front, back, userID, setID)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	id, _ := result.LastInsertId()
-	uid := uint64(id)
-	return &uid, nil
+	return uint64(id), nil
 }
 
 func (r *flashcardRepo) Update(ctx context.Context, id uint64, front string, back string, setID uint64) error {

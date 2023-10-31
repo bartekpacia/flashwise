@@ -82,9 +82,14 @@ func CORSHandler(next http.Handler) http.Handler {
 
 func LogHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path)
 		m := httpsnoop.CaptureMetrics(next, w, r)
-		slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path, "status_code", m.Code, "duration", m.Duration.Milliseconds())
+		slog.Info(
+			r.Method,
+			"from", r.RemoteAddr,
+			"url", r.URL.Path,
+			"status_code", m.Code,
+			"duration", m.Duration.Milliseconds(),
+		)
 	})
 }
 

@@ -18,6 +18,7 @@ func main() {
 	ctx := context.Background()
 
 	logger := setUpLogger()
+	slog.SetDefault(logger)
 
 	db, err := connectDB(logger)
 	if err != nil {

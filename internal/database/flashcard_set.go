@@ -44,21 +44,20 @@ func (r *flashcardSetRepository) GetByID(ctx context.Context, id uint64) (*domai
 	return &flashcardSet, nil
 }
 
-func (r *flashcardSetRepository) Create(ctx context.Context, title string, public bool, categoryID uint64) (*uint64, error) {
+func (r *flashcardSetRepository) Create(ctx context.Context, title string, public bool, categoryID uint64) (uint64, error) {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
-		return nil, domain.ErrNoUserID
+		return 0, domain.ErrNoUserID
 	}
 
 	stmt := "INSERT INTO flashcard_sets (author_id, title, is_public, category_id) VALUES (?, ?, ?, ?)"
 	result, err := r.db.ExecContext(ctx, stmt, userID, title, public, categoryID)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	id, _ := result.LastInsertId()
-	idUint := uint64(id)
-	return &idUint, nil
+	return uint64(id), nil
 }
 
 func (r *flashcardSetRepository) Delete(ctx context.Context, id uint64) error {
