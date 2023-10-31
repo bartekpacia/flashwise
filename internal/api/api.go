@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/bartekpacia/flashwise/internal/api/middleware"
 	"github.com/bartekpacia/flashwise/internal/database"
 	"github.com/bartekpacia/flashwise/internal/domain"
 	"github.com/gorilla/mux"
@@ -24,15 +25,21 @@ type api struct {
 func NewAPI(logger *slog.Logger, db *sqlx.DB) *api {
 	httpClient := &http.Client{}
 
+	middleware.DB = db // This is hacky. See #5
+
+	userRepo := database.NewUserRepository(db)
 	flashcardRepo := database.NewFlashcardRepository(db)
+	flashcardSetRepo := database.NewFlashcardSetRepository(db)
 	categoryRepo := database.NewCategoryRepository(db)
 
 	return &api{
 		logger:     logger,
 		httpClient: httpClient,
 
-		flashcardRepo: flashcardRepo,
-		categoryRepo:  categoryRepo,
+		userRepo:         userRepo,
+		flashcardRepo:    flashcardRepo,
+		flashcardSetRepo: flashcardSetRepo,
+		categoryRepo:     categoryRepo,
 	}
 }
 
@@ -46,21 +53,25 @@ func (a *api) CreateServer(port int) *http.Server {
 func (a *api) routes() http.Handler {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/api/register", CreateUser).Methods("POST")
+	router.Use(middleware.TrailingSlashHandler)
+	router.Use(middleware.LogHandler)
+	router.Use(middleware.CORSHandler)
 
-	router.HandleFunc("/api/flashcards", AuthHandler(GetFlashcards)).Methods("GET")
-	router.HandleFunc("/api/flashcards", AuthHandler(CreateFlashcard)).Methods("POST")
-	router.HandleFunc("/api/flashcards/{id}", AuthHandler(a.updateFlashcard)).Methods("PATCH", "PUT")
-	router.HandleFunc("/api/flashcards", AuthHandler(a.deleteFlashcard)).Methods("DELETE")
+	router.HandleFunc("/api/register", a.createUser).Methods("POST")
 
-	router.HandleFunc("/api/sets", AuthHandler(GetFlashcardSet)).Methods("GET")
-	router.HandleFunc("/api/sets", AuthHandler(CreateFlashcardSet)).Methods("POST")
-	router.HandleFunc("/api/sets/{id}", AuthHandler(DeleteFlashcardSet)).Methods("DELETE")
+	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.getFlashcards)).Methods("GET")
+	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.createFlashcard)).Methods("POST")
+	router.HandleFunc("/api/flashcards/{id}", middleware.AuthHandler(a.updateFlashcard)).Methods("PATCH", "PUT")
+	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.deleteFlashcard)).Methods("DELETE")
 
-	router.HandleFunc("/api/category", AuthHandler(GetCategories)).Methods("GET")
+	router.HandleFunc("/api/sets", middleware.AuthHandler(a.getFlashcardSet)).Methods("GET")
+	router.HandleFunc("/api/sets", middleware.AuthHandler(a.createFlashcardSet)).Methods("POST")
+	router.HandleFunc("/api/sets/{id}", middleware.AuthHandler(a.deleteFlashcardSet)).Methods("DELETE")
 
-	router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
-	router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
+	router.HandleFunc("/api/category", middleware.AuthHandler(a.getCategories)).Methods("GET")
 
-	return TrailingSlashHandler(LogHandler(CORSHandler(router.ServeHTTP)))
+	// router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
+	// router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
+
+	return router
 }

@@ -24,8 +24,8 @@ func (r *flashcardRepo) GetAll(ctx context.Context) ([]domain.Flashcard, error) 
 	flashcards := make([]domain.Flashcard, 0)
 	err := r.db.GetContext(ctx, &flashcards, "SELECT * FROM flashcards WHERE author_id = ?", userID)
 	if err != nil {
-		// FIXME: handle no rows error
-		return nil, domain.ErrNotFound
+		// TODO: handle no rows error
+		return nil, err
 	}
 
 	return flashcards, nil
@@ -40,8 +40,8 @@ func (r *flashcardRepo) GetByID(ctx context.Context, id uint64) (*domain.Flashca
 	var flashcard domain.Flashcard
 	err := r.db.GetContext(ctx, &flashcard, "SELECT * FROM flashcards WHERE author_id = ? AND id = ?", userID, id)
 	if err != nil {
-		// FIXME: handle no rows error
-		return nil, domain.ErrNotFound
+		// TODO: handle no rows error
+		return nil, err
 	}
 
 	return &flashcard, nil
@@ -53,11 +53,23 @@ func (r *flashcardRepo) GetBySetID(ctx context.Context, setID uint64) ([]domain.
 		return nil, domain.ErrNoUserID
 	}
 
-	flashcards := make([]domain.Flashcard, 0)
-	err := r.db.SelectContext(ctx, &flashcards, "SELECT * FROM flashcards WHERE author_id = ? AND set_id = ?", userID, setID)
+	// Check if set exists
+	var exists bool
+	row := r.db.QueryRowxContext(ctx, "SELECT EXISTS(SELECT 1 FROM flashcard_sets WHERE id = ?)", setID)
+	err := row.Scan(&exists)
 	if err != nil {
-		// FIXME: handle no rows error
-		return nil, domain.ErrNotFound
+		return nil, err
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("set with id %d not found", setID)
+	}
+
+	flashcards := make([]domain.Flashcard, 0)
+	err = r.db.SelectContext(ctx, &flashcards, "SELECT * FROM flashcards WHERE author_id = ? AND set_id = ?", userID, setID)
+	if err != nil {
+		// TODO: handle no rows error
+		return nil, err
 	}
 
 	return flashcards, nil
@@ -70,18 +82,11 @@ func (r *flashcardRepo) Create(ctx context.Context, front string, back string, s
 	}
 
 	// Verify that the flashcard set belongs to the user with userID
-
 	var set domain.FlashcardSet
 	err := r.db.GetContext(ctx, &set, "SELECT * FROM flashcard_sets WHERE id = ?", setID)
 	if err != nil {
-		// TODO: handle sql.ErrNoRows explicitly
-		// if err == sql.ErrNoRows {
-		// 	return nil, domain.ErrNotFound
-		// }
-
-		return nil, fmt.Errorf("failed to execute query: %v", err)
+		return nil, err
 	}
-
 	if set.AuthorID != userID {
 		return nil, fmt.Errorf("set with ID %d does not belong to user %d", setID, userID)
 	}
@@ -93,7 +98,7 @@ func (r *flashcardRepo) Create(ctx context.Context, front string, back string, s
 			(?, ?, ?, ?)`
 	result, err := r.db.ExecContext(ctx, stmt, front, back, userID, setID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query:", err)
+		return nil, err
 	}
 
 	id, _ := result.LastInsertId()

@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY *.go /tmp/flashwise
 
-RUN go build .
+RUN go build ./cmd/flashwise
 
 FROM alpine:latest AS runtime
 

@@ -1,4 +1,4 @@
-package api
+package middleware
 
 import (
 	"context"
@@ -8,10 +8,12 @@ import (
 	"strings"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/jmoiron/sqlx"
 )
 
-// type ContextKey string
-// const ContextUserKey ContextKey = "user_id"
+// DB is a hacky way to circumvent around database not being accessible in
+// middleware. In the longer term, JWTs should be used. See #5.
+var DB *sqlx.DB
 
 func AuthHandler(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +31,14 @@ func AuthHandler(next http.HandlerFunc) http.HandlerFunc {
 
 		token = strings.TrimSpace(splitToken[1])
 
-		var user User
-		err := db.Get(&user, "SELECT * FROM users WHERE token = ?", token)
+		var userID uint64
+		err := DB.Get(&userID, "SELECT id FROM users WHERE token = ?", token)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", user.ID)
+		ctx := context.WithValue(r.Context(), "user_id", userID)
 		next(w, r.WithContext(ctx))
 	})
 }
@@ -46,7 +48,7 @@ var (
 	allowedMethods = []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}
 )
 
-func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
+func CORSHandler(next http.Handler) http.Handler {
 	isPreflight := func(r *http.Request) bool {
 		return r.Method == "OPTIONS" &&
 			r.Header.Get("Origin") != "" &&
@@ -74,21 +76,21 @@ func CORSHandler(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Vary", "Origin")
 		}
 
-		next(w, r)
+		next.ServeHTTP(w, r)
 	})
 }
 
-func LogHandler(next http.HandlerFunc) http.HandlerFunc {
+func LogHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path)
+		// slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path)
 		m := httpsnoop.CaptureMetrics(next, w, r)
 		slog.Info(r.Method, "from", r.RemoteAddr, "url", r.URL.Path, "status_code", m.Code, "duration", m.Duration.Milliseconds())
 	})
 }
 
-func TrailingSlashHandler(next http.HandlerFunc) http.HandlerFunc {
+func TrailingSlashHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
-		next(w, r)
+		next.ServeHTTP(w, r)
 	})
 }

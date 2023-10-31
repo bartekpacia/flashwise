@@ -16,7 +16,10 @@ func NewCategoryRepository(db Database) domain.CategoryRepository {
 
 func (r *categoryRepo) GetAll(ctx context.Context) ([]domain.Category, error) {
 	categories := make([]domain.Category, 0)
-	err := r.db.Select(&categories, "SELECT * FROM categories")
+	err := r.db.SelectContext(ctx, &categories, "SELECT * FROM categories")
+	if err != nil {
+		return nil, err
+	}
 
 	return categories, err
 }
