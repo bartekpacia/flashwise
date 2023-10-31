@@ -22,7 +22,9 @@ func main() {
 	db, err := connectDB(logger)
 	if err != nil {
 		logger.Error("failed to connect to database", "error", err)
+		os.Exit(1)
 	}
+
 	defer db.Close()
 
 	server := api.NewAPI(logger, db).CreateServer(8080)

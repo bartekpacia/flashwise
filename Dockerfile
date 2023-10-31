@@ -1,19 +1,18 @@
 FROM golang:1.21 AS build
 
+ARG CGO_ENABLED=0
+
 WORKDIR /tmp/flashwise
 
 COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY *.go /tmp/flashwise
+COPY ./ ./
 
 RUN go build ./cmd/flashwise
 
-FROM alpine:latest AS runtime
-
-# Fix for "file not found"
-RUN apk add --no-cache libc6-compat
+FROM alpine:3 AS runtime
 
 COPY --from=build /tmp/flashwise/flashwise /usr/local/bin/flashwise
 
