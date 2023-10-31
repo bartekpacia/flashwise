@@ -70,20 +70,20 @@ func (r *flashcardRepo) Create(ctx context.Context, front string, back string, s
 	}
 
 	// Verify that the flashcard set belongs to the user with userID
-	
+
 	var set domain.FlashcardSet
 	err := r.db.GetContext(ctx, &set, "SELECT * FROM flashcard_sets WHERE id = ?", setID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, domain.ErrNotFound
-		} else {
-			return nil, fmt.Errorf("failed to execute query: %v", err)
-		}
+		// TODO: handle sql.ErrNoRows explicitly
+		// if err == sql.ErrNoRows {
+		// 	return nil, domain.ErrNotFound
+		// }
+
+		return nil, fmt.Errorf("failed to execute query: %v", err)
 	}
 
 	if set.AuthorID != userID {
-		http.Error(w, fmt.Sprintf("set with ID %d does not belong to user %d\n", body.SetID, userID), http.StatusNotFound)
-		return
+		return nil, fmt.Errorf("set with ID %d does not belong to user %d", setID, userID)
 	}
 
 	stmt := `
@@ -93,12 +93,12 @@ func (r *flashcardRepo) Create(ctx context.Context, front string, back string, s
 			(?, ?, ?, ?)`
 	result, err := r.db.ExecContext(ctx, stmt, front, back, userID, setID)
 	if err != nil {
-		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-		return
-	}	
+		return nil, fmt.Errorf("failed to execute query:", err)
+	}
 
 	id, _ := result.LastInsertId()
-	return &id, nil
+	uid := uint64(id)
+	return &uid, nil
 }
 
 func (r *flashcardRepo) Update(ctx context.Context, id uint64, front string, back string, setID uint64) error {

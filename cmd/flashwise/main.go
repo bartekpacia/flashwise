@@ -25,8 +25,6 @@ func main() {
 	}
 	defer db.Close()
 
-	db.GetContext()
-
 	server := api.NewAPI(logger, db).CreateServer(8080)
 	go func() {
 		server.ListenAndServe()
