@@ -6,22 +6,23 @@ import (
 	"github.com/bartekpacia/flashwise/internal/domain"
 )
 
-type flashcardSetRepository struct {
+type flashcardSetRepo struct {
 	db Database
 }
 
 func NewFlashcardSetRepository(db Database) domain.FlashcardSetRepository {
-	return &flashcardSetRepository{db: db}
+	return &flashcardSetRepo{db: db}
 }
 
-func (r *flashcardSetRepository) GetAll(ctx context.Context) ([]domain.FlashcardSet, error) {
+func (r *flashcardSetRepo) GetAll(ctx context.Context, includePrivate bool) ([]domain.FlashcardSet, error) {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
 		return nil, domain.ErrNoUserID
 	}
 
 	flashcardSets := make([]domain.FlashcardSet, 0)
-	err := r.db.SelectContext(ctx, &flashcardSets, "SELECT * FROM flashcard_sets WHERE author_id = ?", userID)
+	stmt := "SELECT * FROM flashcard_sets WHERE author_id = ? AND (is_public = true OR is_public = ?)"
+	err := r.db.SelectContext(ctx, &flashcardSets, stmt, userID, !includePrivate)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +30,7 @@ func (r *flashcardSetRepository) GetAll(ctx context.Context) ([]domain.Flashcard
 	return flashcardSets, nil
 }
 
-func (r *flashcardSetRepository) GetByID(ctx context.Context, id uint64) (*domain.FlashcardSet, error) {
+func (r *flashcardSetRepo) GetByID(ctx context.Context, id uint64) (*domain.FlashcardSet, error) {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
 		return nil, domain.ErrNoUserID
@@ -44,7 +45,29 @@ func (r *flashcardSetRepository) GetByID(ctx context.Context, id uint64) (*domai
 	return &flashcardSet, nil
 }
 
-func (r *flashcardSetRepository) Create(ctx context.Context, title string, public bool, categoryID uint64) (uint64, error) {
+func (r *flashcardSetRepo) GetByCategory(ctx context.Context, categoryID uint64) ([]domain.FlashcardSet, error) {
+	flashcardSets := make([]domain.FlashcardSet, 0)
+	stmt := "SELECT * FROM flashcard_sets WHERE is_public = true AND category_id = ?"
+	err := r.db.SelectContext(ctx, &flashcardSets, stmt, categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return flashcardSets, nil
+}
+
+func (r *flashcardSetRepo) GetByNameContains(ctx context.Context, name string) ([]domain.FlashcardSet, error) {
+	flashcardSets := make([]domain.FlashcardSet, 0)
+	stmt := "SELECT * FROM flashcard_sets WHERE is_public = true AND title LIKE ?"
+	err := r.db.SelectContext(ctx, &flashcardSets, stmt, "%"+name+"%")
+	if err != nil {
+		return nil, err
+	}
+
+	return flashcardSets, nil
+}
+
+func (r *flashcardSetRepo) Create(ctx context.Context, title string, public bool, categoryID uint64) (uint64, error) {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
 		return 0, domain.ErrNoUserID
@@ -60,7 +83,22 @@ func (r *flashcardSetRepository) Create(ctx context.Context, title string, publi
 	return uint64(id), nil
 }
 
-func (r *flashcardSetRepository) Delete(ctx context.Context, id uint64) error {
+func (r *flashcardSetRepo) Update(ctx context.Context, id uint64, title string, public bool, categoryID uint64) error {
+	userID, ok := ctx.Value("user_id").(uint64)
+	if !ok {
+		return domain.ErrNoUserID
+	}
+
+	stmt := "UPDATE flashcard_sets SET title = ?, is_public = ? , category_id = ? WHERE id = ? AND author_id = ?"
+	_, err := r.db.ExecContext(ctx, stmt, title, public, categoryID, id, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *flashcardSetRepo) Delete(ctx context.Context, id uint64) error {
 	userID, ok := ctx.Value("user_id").(uint64)
 	if !ok {
 		return domain.ErrNoUserID

@@ -16,10 +16,13 @@ type FlashcardSet struct {
 }
 
 type FlashcardSetRepository interface {
-	GetAll(ctx context.Context) ([]FlashcardSet, error)
+	GetAll(ctx context.Context, includePrivate bool) ([]FlashcardSet, error)
 	GetByID(ctx context.Context, id uint64) (*FlashcardSet, error)
+	GetByCategory(ctx context.Context, categoryID uint64) ([]FlashcardSet, error)
+	GetByNameContains(ctx context.Context, name string) ([]FlashcardSet, error)
 
 	Create(ctx context.Context, title string, public bool, categoryID uint64) (uint64, error)
+	Update(ctx context.Context, id uint64, title string, public bool, categoryID uint64) error
 
 	Delete(ctx context.Context, id uint64) error
 }
