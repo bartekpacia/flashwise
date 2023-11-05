@@ -25,10 +25,10 @@ func (a *api) getFlashcards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	flashcardID := r.URL.Query().Get("flashcard_id")
-	setID := r.URL.Query().Get("set_id")
+	setID := r.URL.Query().Get("flashcard_set")
 
 	if flashcardID != "" && setID != "" {
-		http.Error(w, "Only one of flashcard_id and set_id can be specified", http.StatusBadRequest)
+		http.Error(w, "Only one of flashcard_id and flashcard_set can be specified", http.StatusBadRequest)
 		return
 	}
 
@@ -52,13 +52,14 @@ func (a *api) getFlashcards(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(flashcard)
+		return
 	}
 
 	if setID != "" {
 		// Return all flashcards for the user with the specified set ID
 		setIDInt, err := strconv.ParseUint(setID, 10, 64)
 		if err != nil {
-			http.Error(w, "set_id query parameter must be an integer\n", http.StatusBadRequest)
+			http.Error(w, "flashcard_set query parameter must be an integer\n", http.StatusBadRequest)
 			return
 		}
 
@@ -70,16 +71,17 @@ func (a *api) getFlashcards(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(flashcards)
-	} else {
-		flashcards, err := a.flashcardRepo.GetAll(r.Context())
-		if err != nil {
-			http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(flashcards)
+		return
 	}
+
+	flashcards, err := a.flashcardRepo.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(flashcards)
 }
 
 func (a *api) createFlashcard(w http.ResponseWriter, r *http.Request) {
