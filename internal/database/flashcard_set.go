@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/bartekpacia/flashwise/internal/domain"
 )
@@ -37,9 +38,17 @@ func (r *flashcardSetRepo) GetByID(ctx context.Context, id uint64) (*domain.Flas
 	}
 
 	var flashcardSet domain.FlashcardSet
-	err := r.db.GetContext(ctx, &flashcardSet, "SELECT * FROM flashcard_sets WHERE id = ? AND author_id = ?", id, userID)
+	err := r.db.GetContext(ctx, &flashcardSet, "SELECT * FROM flashcard_sets WHERE id = ?", id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, err
+	}
+
+	if flashcardSet.AuthorID != userID && !flashcardSet.Public {
+		return nil, domain.ErrNoAccess
 	}
 
 	return &flashcardSet, nil
@@ -104,7 +113,12 @@ func (r *flashcardSetRepo) Delete(ctx context.Context, id uint64) error {
 		return domain.ErrNoUserID
 	}
 
-	_, err := r.db.ExecContext(ctx, "DELETE FROM flashcard_sets WHERE id = ? AND author_id = ?", id, userID)
+	_, err := r.db.ExecContext(ctx, "DELETE FROM flashcards WHERE set_id = ? AND author_id = ?", id, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.ExecContext(ctx, "DELETE FROM flashcard_sets WHERE id = ? AND author_id = ?", id, userID)
 	if err != nil {
 		return err
 	}

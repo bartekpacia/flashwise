@@ -63,6 +63,10 @@ func (a *api) getFlashcardSet(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			if err == domain.ErrNoAccess {
+				w.WriteHeader(http.StatusForbidden)
+			}
+
 			http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
 			return
 		}
