@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 
 	"github.com/bartekpacia/flashwise/internal/domain"
 	"golang.org/x/crypto/bcrypt"
@@ -18,8 +17,23 @@ func NewUserRepository(db Database) domain.UserRepository {
 	return &userRepo{db: db}
 }
 
-func (r *userRepo) Login(ctx context.Context, email string, password string) (token *string, err error) {
-	return nil, errors.New("not implemented")
+func (r *userRepo) Login(ctx context.Context, username string, password string) (token *string, err error) {
+	var user domain.User
+	err = r.db.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", username)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return nil, domain.ErrInvalidPassword
+		}
+
+		return nil, err
+	}
+
+	return &user.Token, nil
 }
 
 func (r *userRepo) Register(ctx context.Context, username string, email string, password string) (*domain.User, error) {

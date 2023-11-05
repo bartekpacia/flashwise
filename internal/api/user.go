@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/bartekpacia/flashwise/internal/domain"
 )
 
 type createUserRequest struct {
@@ -45,5 +47,34 @@ func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	tokenJSON := map[string]string{"token": user.Token}
+	json.NewEncoder(w).Encode(tokenJSON)
+}
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (a *api) login(w http.ResponseWriter, r *http.Request) {
+	var body loginRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	token, err := a.userRepo.Login(r.Context(), body.Username, body.Password)
+	if err != nil {
+		if err == domain.ErrInvalidPassword {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	tokenJSON := map[string]string{"token": *token}
 	json.NewEncoder(w).Encode(tokenJSON)
 }

@@ -53,6 +53,7 @@ func (a *api) CreateServer(port int) *http.Server {
 func (a *api) routes() http.Handler {
 	router := mux.NewRouter()
 
+	router.HandleFunc("/auth/login", a.login).Methods("POST")
 	router.HandleFunc("/api/register", a.createUser).Methods("POST")
 
 	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.getFlashcards)).Methods("GET")

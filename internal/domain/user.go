@@ -16,6 +16,6 @@ type User struct {
 }
 
 type UserRepository interface {
-	Login(ctx context.Context, email string, password string) (token *string, err error)
+	Login(ctx context.Context, username string, password string) (token *string, err error)
 	Register(ctx context.Context, username string, email string, password string) (*User, error)
 }
