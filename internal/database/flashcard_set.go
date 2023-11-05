@@ -89,7 +89,7 @@ func (r *flashcardSetRepo) Update(ctx context.Context, id uint64, title string, 
 		return domain.ErrNoUserID
 	}
 
-	stmt := "UPDATE flashcard_sets SET title = ?, is_public = ? , category_id = ? WHERE id = ? AND author_id = ?"
+	stmt := "UPDATE flashcard_sets SET title = ?, is_public = ?, category_id = ? WHERE id = ? AND author_id = ?"
 	_, err := r.db.ExecContext(ctx, stmt, title, public, categoryID, id, userID)
 	if err != nil {
 		return err

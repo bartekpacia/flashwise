@@ -7,7 +7,7 @@ import (
 
 type FlashcardSet struct {
 	ID         uint64     `json:"id" db:"id"` // Primary key
-	Public     string     `json:"is_public" db:"is_public"`
+	Public     bool       `json:"is_public" db:"is_public"`
 	Title      string     `json:"name" db:"title"`
 	CreatedAt  time.Time  `json:"created_at" db:"created_at"`
 	ModifiedAt *time.Time `json:"modified_at" db:"modified_at"`
