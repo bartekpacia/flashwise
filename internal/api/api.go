@@ -68,8 +68,8 @@ func (a *api) routes() http.Handler {
 
 	router.HandleFunc("/api/category", middleware.AuthHandler(a.getCategories)).Methods("GET")
 
-	// router.HandleFunc("/api/quiz/generate", AuthHandler(GenerateQuiz)).Methods("POST")
-	// router.HandleFunc("/api/quiz/check", AuthHandler(CheckQuiz)).Methods("PUT")
+	router.HandleFunc("/api/quiz/generate", middleware.AuthHandler(a.generateQuiz)).Methods("POST")
+	router.HandleFunc("/api/quiz/check", middleware.AuthHandler(a.checkQuiz)).Methods("PUT")
 
 	return middleware.TrailingSlashHandler(middleware.LogHandler(middleware.CORSHandler(router)))
 }
