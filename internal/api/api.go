@@ -20,6 +20,7 @@ type api struct {
 	flashcardRepo    domain.FlashcardRepository
 	flashcardSetRepo domain.FlashcardSetRepository
 	categoryRepo     domain.CategoryRepository
+	quizRepo         domain.QuizRepository
 }
 
 func NewAPI(logger *slog.Logger, db *sqlx.DB) *api {
@@ -31,6 +32,7 @@ func NewAPI(logger *slog.Logger, db *sqlx.DB) *api {
 	flashcardRepo := database.NewFlashcardRepository(db)
 	flashcardSetRepo := database.NewFlashcardSetRepository(db)
 	categoryRepo := database.NewCategoryRepository(db)
+	quizRepo := database.NewQuizRepository(db)
 
 	return &api{
 		logger:     logger,
@@ -40,6 +42,7 @@ func NewAPI(logger *slog.Logger, db *sqlx.DB) *api {
 		flashcardRepo:    flashcardRepo,
 		flashcardSetRepo: flashcardSetRepo,
 		categoryRepo:     categoryRepo,
+		quizRepo:         quizRepo,
 	}
 }
 

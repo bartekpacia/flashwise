@@ -1,7 +1,24 @@
 package domain
 
+import "context"
+
 type Quiz struct {
-	ID             uint64 `db:"id"`            // Primary key
-	FlashcardSetID uint64 `db:"flashcard_set"` // Foreign key to FlashcardSet
-	AuthorID       uint64 `db:"author_id"`     // Foreign key to User
+	ID        uint64     `json:"quiz_id"`
+	Questions []Question `json:"question"`
+}
+
+type Question struct {
+	ID      uint64   `json:"id"`
+	Text    string   `json:"text"`
+	Answers []Answer `json:"answers"`
+}
+
+type Answer struct {
+	Letter string `json:"letter"`
+	Text   string `json:"text"`
+}
+
+type QuizRepository interface {
+	Generate(ctx context.Context, id uint64) (*Quiz, error)
+	// Check(ctx context.Context, id uint64) (*Flashcard, error)
 }

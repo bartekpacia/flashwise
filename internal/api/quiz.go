@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/bartekpacia/flashwise/internal/domain"
 )
 
 type generateQuizRequest struct {
-	SetID uint64 `json:"flashcard_set"`
+	SetID uint64 `json:"flashcard_set_id"`
 }
 
 func (a *api) generateQuiz(w http.ResponseWriter, r *http.Request) {
@@ -25,26 +27,24 @@ func (a *api) generateQuiz(w http.ResponseWriter, r *http.Request) {
 
 	_ = userID
 
-	// TODO: Check if flashcard set is public. If is private, check if it belongs to userID.
+	quiz, err := a.quizRepo.Generate(r.Context(), body.SetID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 
-	// var set FlashcardSet
-	// err = db.Get(&set, "SELECT * FROM flashcard_sets WHERE id = ?", body.SetID)
-	// if err != nil {
-	// 	if err == sql.ErrNoRows {
-	// 		http.Error(w, fmt.Sprintf("set with ID %d does not exist\n", body.SetID), http.StatusNotFound)
-	// 		return
-	// 	} else {
-	// 		http.Error(w, fmt.Sprintln("failed to execute query:", err), http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// }
+		if err == domain.ErrNoAccess {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 
-	// if set.AuthorID != userID {
-	// 	http.Error(w, fmt.Sprintf("set with ID %d does not belong to user %d\n", body.SetID, userID), http.StatusNotFound)
-	// 	return
-	// }
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quiz)
 }
 
 func (a *api) checkQuiz(w http.ResponseWriter, r *http.Request) {
