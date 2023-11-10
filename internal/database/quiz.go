@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
-	"strconv"
+	"slices"
 	"time"
 
 	"github.com/bartekpacia/flashwise/internal/domain"
@@ -72,8 +72,18 @@ func generateQuestions(flashcards []domain.Flashcard) []domain.Question {
 			Text:   flashcard.Back,
 		})
 
+		// Randomize flashcards
+		shuffledFlashcards := make([]domain.Flashcard, len(flashcards))
+		copy(shuffledFlashcards, flashcards)
+		rng.Shuffle(len(shuffledFlashcards), func(i, j int) {
+			shuffledFlashcards[i], shuffledFlashcards[j] = shuffledFlashcards[j], shuffledFlashcards[i]
+		})
+		slices.DeleteFunc(shuffledFlashcards, func(f domain.Flashcard) bool {
+			return f.ID == flashcard.ID
+		})
+
 		// Add 3 other incorrect answers
-		answers = append(answers, genRandomAnswers(flashcards)...)
+		answers = append(answers, genRandomAnswers(shuffledFlashcards)...)
 
 		question := domain.Question{
 			FlashcardID: flashcard.ID,
@@ -101,7 +111,7 @@ func genRandomAnswers(flashcards []domain.Flashcard) []domain.Answer {
 	answers := make([]domain.Answer, 0)
 	for i, back := range backs {
 		answers = append(answers, domain.Answer{
-			Letter: strconv.Itoa(66 + i),
+			Letter: string(rune(66 + i)),
 			Text:   back,
 		})
 	}
