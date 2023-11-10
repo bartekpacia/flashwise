@@ -52,7 +52,6 @@ func (r *quizRepo) Generate(ctx context.Context, id uint64) (*domain.Quiz, error
 	})
 
 	quiz := domain.Quiz{
-		ID:        uint64(rng.Intn(10000)),
 		Questions: generateQuestions(flashcards),
 	}
 
@@ -77,7 +76,6 @@ func generateQuestions(flashcards []domain.Flashcard) []domain.Question {
 		answers = append(answers, genRandomAnswers(flashcards)...)
 
 		question := domain.Question{
-			ID:          uint64(rng.Intn(10000)),
 			FlashcardID: flashcard.ID,
 			Text:        flashcard.Front,
 			Answers:     answers,
