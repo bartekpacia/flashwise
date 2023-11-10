@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -108,4 +109,40 @@ func genRandomAnswers(flashcards []domain.Flashcard) []domain.Answer {
 	}
 
 	return answers
+}
+
+func (r *quizRepo) Check(ctx context.Context, answers map[string]string) (*domain.QuizResult, error) {
+	// TODO: Use userID to check for ownership of flashcards
+	_, ok := ctx.Value("user_id").(uint64)
+	if !ok {
+		return nil, domain.ErrNoUserID
+	}
+
+	quizResult := domain.QuizResult{
+		Results: make(map[string]string),
+	}
+
+	for flashcardID, gotAnswer := range answers {
+		var goodAnswer string
+		err := r.db.GetContext(ctx, &goodAnswer, "SELECT back FROM flashcards WHERE id = ?", flashcardID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, domain.ErrNotFound
+			}
+
+			return nil, err
+		}
+
+		fmt.Println("got good answer for flashcard", flashcardID, ":", goodAnswer)
+
+		if gotAnswer != goodAnswer {
+			quizResult.Results[flashcardID] = "Incorrect"
+		} else {
+			quizResult.Results[flashcardID] = "Correct"
+			quizResult.FinalScore++
+		}
+
+	}
+
+	return &quizResult, nil
 }
