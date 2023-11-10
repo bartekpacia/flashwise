@@ -65,16 +65,21 @@ func generateQuestions(flashcards []domain.Flashcard) []domain.Question {
 
 	for _, flashcard := range flashcards {
 		answers := make([]domain.Answer, 0)
+
+		// Add the correct answer
 		answers = append(answers, domain.Answer{
 			Letter: "A",
 			Text:   flashcard.Back,
 		})
+
+		// Add 3 other incorrect answers
 		answers = append(answers, genRandomAnswers(flashcards)...)
 
 		question := domain.Question{
-			ID:      uint64(rng.Intn(10000)),
-			Text:    flashcard.Front,
-			Answers: answers,
+			ID:          uint64(rng.Intn(10000)),
+			FlashcardID: flashcard.ID,
+			Text:        flashcard.Front,
+			Answers:     answers,
 		}
 
 		questions = append(questions, question)

@@ -8,9 +8,10 @@ type Quiz struct {
 }
 
 type Question struct {
-	ID      uint64   `json:"id"`
-	Text    string   `json:"text"`
-	Answers []Answer `json:"answers"`
+	ID          uint64   `json:"id"`
+	FlashcardID uint64   `json:"flashcard_i"`
+	Text        string   `json:"text"`
+	Answers     []Answer `json:"answers"`
 }
 
 type Answer struct {
