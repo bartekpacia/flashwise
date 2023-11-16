@@ -17,8 +17,8 @@ VALUES (
 
 INSERT INTO categories (title, slug)
 VALUES ('Geografia', 'geografia'),
-('Język angielski', 'angielski'),
-('Język niemiecki', 'niemiecki'),
+('Angielsi', 'angielski'),
+('Niemiecki', 'niemiecki'),
 ('Historia', 'historia');
 
 INSERT INTO flashcard_sets (title, author_id, category_id)
