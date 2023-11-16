@@ -17,7 +17,7 @@ VALUES (
 
 INSERT INTO categories (title, slug)
 VALUES ('Geografia', 'geografia'),
-('Angielsi', 'angielski'),
+('Angielski', 'angielski'),
 ('Niemiecki', 'niemiecki'),
 ('Historia', 'historia');
 
