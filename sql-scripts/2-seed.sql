@@ -16,7 +16,10 @@ VALUES (
 );
 
 INSERT INTO categories (title, slug)
-VALUES ('Geografia', 'geografia');
+VALUES ('Geografia', 'geografia'),
+('Język angielski', 'angielski'),
+('Język niemiecki', 'niemiecki'),
+('Historia', 'historia');
 
 INSERT INTO flashcard_sets (title, author_id, category_id)
 VALUES ('Ciekawostki o Polsce', 2, 1);
