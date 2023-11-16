@@ -139,9 +139,9 @@ func (a *api) deleteFlashcard(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	id, err := strconv.ParseUint(mux.Vars(r)["flashcard_id"], 10, 64)
+	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
-		http.Error(w, "flashcard_id query parameter is missing or not uint64", http.StatusBadRequest)
+		http.Error(w, "id route variable is missing or not uint64", http.StatusBadRequest)
 		return
 	}
 
