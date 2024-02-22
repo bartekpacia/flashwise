@@ -8,7 +8,6 @@ import (
 	"github.com/bartekpacia/flashwise/internal/api/middleware"
 	"github.com/bartekpacia/flashwise/internal/database"
 	"github.com/bartekpacia/flashwise/internal/domain"
-	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -54,25 +53,27 @@ func (a *api) CreateServer(port int) *http.Server {
 }
 
 func (a *api) routes() http.Handler {
-	router := mux.NewRouter()
+	router := http.NewServeMux()
 
-	router.HandleFunc("/auth/login", a.login).Methods("POST")
-	router.HandleFunc("/api/register", a.createUser).Methods("POST")
+	router.HandleFunc("POST /auth/login", a.login)
+	router.HandleFunc("POST /api/register", a.createUser)
 
-	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.getFlashcards)).Methods("GET")
-	router.HandleFunc("/api/flashcards", middleware.AuthHandler(a.createFlashcard)).Methods("POST")
-	router.HandleFunc("/api/flashcards/{id}", middleware.AuthHandler(a.updateFlashcard)).Methods("PATCH", "PUT")
-	router.HandleFunc("/api/flashcards/{id}", middleware.AuthHandler(a.deleteFlashcard)).Methods("DELETE")
+	router.HandleFunc("GET /api/flashcards", middleware.AuthHandler(a.getFlashcards))
+	router.HandleFunc("POST /api/flashcards", middleware.AuthHandler(a.createFlashcard))
+	router.HandleFunc("PATCH /api/flashcards/{id}", middleware.AuthHandler(a.updateFlashcard))
+	router.HandleFunc("PUT /api/flashcards/{id}", middleware.AuthHandler(a.updateFlashcard))
+	router.HandleFunc("DELETE /api/flashcards/{id}", middleware.AuthHandler(a.deleteFlashcard))
 
-	router.HandleFunc("/api/sets", middleware.AuthHandler(a.getFlashcardSet)).Methods("GET")
-	router.HandleFunc("/api/sets", middleware.AuthHandler(a.createFlashcardSet)).Methods("POST")
-	router.HandleFunc("/api/sets/{id}", middleware.AuthHandler(a.updateFlashcardSet)).Methods("PATCH", "PUT")
-	router.HandleFunc("/api/sets/{id}", middleware.AuthHandler(a.deleteFlashcardSet)).Methods("DELETE")
+	router.HandleFunc("GET /api/sets", middleware.AuthHandler(a.getFlashcardSet))
+	router.HandleFunc("POST /api/sets", middleware.AuthHandler(a.createFlashcardSet))
+	router.HandleFunc("PATCH /api/sets/{id}", middleware.AuthHandler(a.updateFlashcardSet))
+	router.HandleFunc("PUT /api/sets/{id}", middleware.AuthHandler(a.updateFlashcardSet))
+	router.HandleFunc("DELETE /api/sets/{id}", middleware.AuthHandler(a.deleteFlashcardSet))
 
-	router.HandleFunc("/api/category", middleware.AuthHandler(a.getCategories)).Methods("GET")
+	router.HandleFunc("GET /api/category", middleware.AuthHandler(a.getCategories))
 
-	router.HandleFunc("/api/quiz/generate", middleware.AuthHandler(a.generateQuiz)).Methods("POST")
-	router.HandleFunc("/api/quiz/check", middleware.AuthHandler(a.checkQuiz)).Methods("PUT")
+	router.HandleFunc("POST /api/quiz/generate", middleware.AuthHandler(a.generateQuiz))
+	router.HandleFunc("PUT /api/quiz/check", middleware.AuthHandler(a.checkQuiz))
 
 	return middleware.TrailingSlashHandler(middleware.LogHandler(middleware.CORSHandler(router)))
 }
