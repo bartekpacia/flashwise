@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/bartekpacia/flashwise/internal/domain"
-	"github.com/gorilla/mux"
 )
 
 type createFlashcardSetRequest struct {
@@ -150,7 +149,7 @@ func (a *api) updateFlashcardSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
+	id, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, "id route variable is missing or not uint64", http.StatusBadRequest)
 		return
@@ -175,7 +174,7 @@ func (a *api) deleteFlashcardSet(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: delete all flashcards belonging to user?
 
-	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
+	id, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, "id route variable is missing or not uint64", http.StatusBadRequest)
 		return
